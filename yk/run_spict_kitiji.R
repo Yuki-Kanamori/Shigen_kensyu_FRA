@@ -26,6 +26,14 @@ setwd(dir = dir_ad)
 area_density = read.csv("estimatedtrend_for_SS.csv")
 
 
+# logLikelihood <- function(args, x){
+#   likelihood <- 1/sqrt(2*pi*args[2]^2)*exp(-0.5*((x-args[1])/args[2])^2)
+#   return(sum(log(likelihood)))
+# }
+# 
+# mle <- optim(par=c(0,1), fn=logLikelihood, x = area_density$total, control=list(fnscale=-1))$par
+
+
 
 # SSで推定した資源量 ----------------------------------------------------
 # dir_ss = ""
@@ -79,6 +87,7 @@ summary(res0)
 
 # 推定された初期資源量の割合がデフォルトでは出ないので，出す
 get.par("logbkfrac", res0, exp = TRUE) #オプションexp=TRUEによって、log推定値を非対数に戻す
+# estの値が，環境収容力のどの位置から採っていたのか?????
 
 #入力データの初期値を確認する：入力データが正しく設定されているかを事後のチェックをしておきましょう
 res0$inp$ini  # res$inp (spict解析に用いた入力データのオブジェクト)
@@ -158,3 +167,79 @@ ggplot(df_Best,
        aes(x = Year, y = Biomass, linetype = name, color = name))+
   geom_line(linewidth = 2)+
   ylab("資源量")+ylim(0,NA)
+
+
+#########################################################
+####　５．レトロスペクティブ解析
+
+res_retro <- retro(res0, nretroyear = 5)　#レトロスペクティブ解析を実行
+plotspict.retro(res_retro)  #レトロ解析プロット
+
+plotspict.retro.fixed(res_retro)  #推定パラメータに関するレトロプロット
+
+mohns_rho(res_retro, what = c("FFmsy", "BBmsy"))  #モーンズローの値を表示
+
+##------------------------------------------- 
+##　推定が上手くいっているか確認事項・その4
+## レトロ解析パターンに一貫性があるかどうか：
+## チェックポイント１：F/FmsyやB/Bmsyが連続に一貫して過小評価あるいは過大評価されていないか
+## チェックポイント2：ベースケースの信用区間内にあるかどうか
+#-------------------------------------------
+
+
+
+#########################################################
+####　６．資源変動の要因分解プロット
+
+source("function.R")
+res_plot <- plot_barbiomass(res = res0)
+res_plot #要因分解プロットのggplotオブジェクトを描画
+##------------------------------------------- 
+##　推定が上手くいっているか確認事項・その5
+## 図の灰色は資源量の推定値を示し、赤、緑、青の矢印がそれぞれの資源量の変動に対する
+## 余剰生産、漁獲、プロセス誤差の影響の大きさを示す
+## チェックポイント：資源量の変動の大部分がプロセス誤差で説明されている場合はよい推定ではない
+#-------------------------------------------
+
+
+
+#########################################################
+# 設定を変更して再解析----
+
+## 事前分布の設定 ----
+names(input$priors)
+input$priors$logn <- c(log(2), 0.5, 1)
+input$priors$logr <- c(log(0.5), 0.5, 1)
+
+
+## spictで推定
+res1 <- fit.spict(input)
+summary(res1)
+### 最初の設定は無情報事前分布である
+
+## モデル診断
+res_diag <- calc.osa.resid(res1)
+plotspict.diagnostic(res_diag)
+
+
+## 結果のプロット ----
+
+## 資源動態の図
+plotspict.biomass(res1)
+plotspict.bbmsy(res1)
+
+## 真の資源動態と比較
+Bt_est_2 <- exp(res1$value[names(res1$value)=="logBBmsy"])*
+  exp(res1$value[names(res1$value)=="logBmsy"])
+df_Best_1_2 <- df_true %>% select("Year", "Biomass") %>%
+  mutate(estB1 = Bt_est_1[1:50],estB2 = Bt_est_2[1:50]) %>% 
+  rename("true" = Biomass) %>% 
+  pivot_longer(cols = -"Year", values_to = "Biomass")
+df_Best_1_2$name <- factor(df_Best_1_2$name, levels=c("true","estB1","estB2"))
+ggplot(df_Best_1_2, aes(x=Year, y=Biomass, linetype = name, color = name))+
+  geom_line(linewidth = 2)+
+  ylab("資源量")
+
+
+
+
