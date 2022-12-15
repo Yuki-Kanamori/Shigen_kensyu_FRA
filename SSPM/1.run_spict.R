@@ -11,6 +11,8 @@
 #########################################################
 #########################################################
 
+def_dir = "/Users/Yuki/FRA/Shigen_kensyu_FRA/SSPM"
+setwd(dir = def_dir)
 
 # 必要なパッケージの呼び出し----
 library(tidyverse)
@@ -50,6 +52,7 @@ input$priors$logq
 input$priors$logsdb
 input$priors$logsdi
 ### 最初の設定は無情報事前分布である
+### 
 
 
 ## とりあえずspictで推定 ==================================================
