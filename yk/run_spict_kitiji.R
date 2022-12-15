@@ -5,8 +5,8 @@ require(spict)
 # 漁獲量 -----------------------------------------------------------
 dir_catch = "/Users/Yuki/Dropbox/業務/キチジ太平洋北部/SA2022/inputdata/output/"
 setwd(dir = dir_catch)
-catch = read.csv("rawdata_fig5_for_nextSA.csv", fileEncoding = "CP932")
-
+catch = read.csv("rawdata_fig5_for_nextSA.csv", fileEncoding = "CP932") %>% filter(method == "沖底")
+head(catch)
 
 # ノミナルCPUE ----------------------------------------------------------
 dir_index = "/Users/Yuki/Dropbox/業務/キチジ太平洋北部/SA2022/SAM/"
@@ -16,7 +16,8 @@ index_n = index[1, ] # ノミナル（沖底）
 
 
 # 標準化CPUE by VAST -----------------------------------------------
-index_so = index[3, ] # 標準化（沖底）
+index_so = index[3, ] %>% gather(key = year, value = st_cpue) 
+index_so = index_so %>% mutate(year = as.numeric(str_sub(index_so$year, 2, 5))) # 標準化（沖底）
 
 
 # 面積密度法で推定した資源量 -------------------------------------------------
@@ -25,3 +26,135 @@ setwd(dir = dir_ad)
 area_density = read.csv("estimatedtrend_for_SS.csv")
 
 
+
+# SSで推定した資源量 ----------------------------------------------------
+# dir_ss = ""
+# setwd(dir = dir_ss)
+# ss = read.csv("")
+
+
+
+
+# データリストの作成 -----------------------------------------------------
+data_test <- list(timeC = catch$year,
+                  obsC  = catch$catch_t,
+                  timeI = index_so$year,
+                  obsI  = index_so$st_cpue)
+
+
+### データのプロット
+plotspict.ci(data_test)
+
+### 解析のための諸設定を自動生成
+input <- check.inp(data_test)
+names(input)
+input$dteuler <- 1 # ??
+
+
+## 事前分布の確認 ----
+names(input$priors)
+
+# ヘルプでcheck.inpを調べるとinputの中身を教えてくれる
+input$priors$logn # 形状パラメータ（正規分布を仮定．平均，標準偏差，事前分布として用いるかどうか(1なら罰則あり，0なら罰則なしで推定))
+
+input$priors$logr # 内的自然増加率
+input$priors$logK # 環境収容力
+
+input$priors$logq # 採集効率
+# input$priors$logq = c(log(2), 0.5, 1)
+
+input$priors$logsdb # biomass?
+input$priors$logsdi # cpueの観測誤差
+### 最初の設定は無情報事前分布である
+### 
+
+
+## とりあえずspictで推定 ==================================================
+res0 <- fit.spict(input)
+
+### 1. 解析結果の確認 =====================================================
+
+# 結果を要約する
+summary(res0)
+
+# 推定された初期資源量の割合がデフォルトでは出ないので，出す
+get.par("logbkfrac", res0, exp = TRUE) #オプションexp=TRUEによって、log推定値を非対数に戻す
+
+#入力データの初期値を確認する：入力データが正しく設定されているかを事後のチェックをしておきましょう
+res0$inp$ini  # res$inp (spict解析に用いた入力データのオブジェクト)
+
+##------------------------------------------
+## 推定が上手くいっているかの確認事項・その１
+##
+## その１−１: 収束しているかどうかを判定
+res0$opt$convergence  #これが0だったら，収束しているのでOK; もし1だったら、収束していないので結果は信頼できない
+##
+##
+## その１−２: 推定パラメータの分散が有限かどうかを判定
+all(is.finite(res0$sd))  # TRUEだったらパラメータの分散が全て有限であるということでOK
+##
+##
+## その１−３: B/BmsyやF/Fmsyの信用区間が一桁以上に広がっていないかどうかを確認
+calc.om(res0) #戻り値のmagnitudeが1 以下ならばOK
+##
+##
+## その１−４: 初期値によってパラメータの推定値が変わらないかどうかを確認
+## check.ini(res)で初期値を変えたときの影響をみることができる．
+## そしてfit<-check.ini(res)としてfit$check.ini$resmatとすると10回分の推定パラの値の一覧が出てくる．
+options(max.print = 1e+05)
+fit <- check.ini(res0, ntrials = 10)  #ntrials = 20に増やしてもよい？
+##
+fit$check.ini$inimat  #trial毎に与えた初期値を確認しておく
+##
+fit$check.ini$resmat  #初期値を変えたtrialによって推定された値。初期値によってはNAとなる場合も。。。
+
+
+
+### ２．結果のプロット =====================================================
+
+plot(res0) #全体的な結果のプロット
+##-------------------------------------------
+## 推定が上手くいっているかの確認事項・その２
+## 余剰生産曲線の形が現実的であるかどうか
+calc.bmsyk(res0)　
+##この値が0.1—0.9の範囲外にある場合は、余剰生産曲線の形が偏っている
+##-------------------------------------------
+
+
+### ３．推定パラメーターの事前分布と事後分布のプロット  ========================
+
+plotspict.priors(res0)  #事前分布と事後分布
+
+
+### ４．残差診断（バイアス、自己相関、正規性の診断） ==========================
+
+res_resi <- calc.osa.resid(res0)
+plotspict.diagnostic(res_resi)
+
+##------------------------------------------- 
+##　推定が上手くいっているか確認事項・その３
+## p値が0.05より大きい(有意に差がない．有意に差があると，
+## 図の上のp値の文字が赤色になる．緑色ならOK)
+##-------------------------------------------
+
+
+
+### 5．結果のプロット ==========================
+
+## 資源動態の図 ------------
+plotspict.biomass(res0)
+plotspict.bbmsy(res0)
+
+## 真の資源動態と比較 -----------------
+Bt_est_1 <- exp(res0$value[names(res0$value)=="logBBmsy"])*
+  exp(res0$value[names(res0$value)=="logBmsy"])
+df_true <- read.csv("pm_true.csv", header = TRUE)
+df_Best <- df_true %>% select("Year", "Biomass") %>%
+  mutate(est = Bt_est_1[1:50]) %>% 
+  rename("true" = Biomass) %>% 
+  pivot_longer(cols = -"Year", values_to = "Biomass")
+df_Best$name <- factor(df_Best$name, levels=c("true","est"))
+ggplot(df_Best,
+       aes(x = Year, y = Biomass, linetype = name, color = name))+
+  geom_line(linewidth = 2)+
+  ylab("資源量")+ylim(0,NA)
