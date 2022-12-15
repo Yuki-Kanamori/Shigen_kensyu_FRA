@@ -24,7 +24,12 @@ index_so = index_so %>% mutate(year = as.numeric(str_sub(index_so$year, 2, 5))) 
 dir_ad = "/Users/Yuki/Dropbox/SS/kitiji/"
 setwd(dir = dir_ad)
 area_density = read.csv("estimatedtrend_for_SS.csv")
-
+mean(area_density$total)
+sd(area_density$total)
+# > mean(area_density$total)
+# [1] 6889.653
+# > sd(area_density$total)
+# [1] 3569.432
 
 # logLikelihood <- function(args, x){
 #   likelihood <- 1/sqrt(2*pi*args[2]^2)*exp(-0.5*((x-args[1])/args[2])^2)
