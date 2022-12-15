@@ -56,7 +56,7 @@ plotspict.ci(data_test)
 ### 解析のための諸設定を自動生成
 input <- check.inp(data_test)
 names(input)
-input$dteuler <- 1 # ??
+input$dteuler <- 1 # ?? 1だと1年ごとに計算．季節などもっと細かい時系列で計算したい時は1/16まで細かくできる（各季節をさらに4つに分けてる？）．資源量が季節ごとに推定できるから，これはこれで面白いかも
 
 
 ## 事前分布の確認 ----
