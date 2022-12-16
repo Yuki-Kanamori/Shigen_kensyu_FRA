@@ -99,4 +99,4 @@ summary(po2)
 index_mn = same %>% filter(lat < 42) %>% na.omit() %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue))
 # index_ak[is.na(index_ak)] = 0
 
-catch_mn = po2 %>% group_by(year) %>% summarize(catch = sum(kg))
+catch_mn = same %>% filter(lat < 42) %>% group_by(year) %>% summarize(catch = sum(kg))
