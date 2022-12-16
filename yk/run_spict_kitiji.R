@@ -247,4 +247,8 @@ ggplot(df_Best_1_2, aes(x=Year, y=Biomass, linetype = name, color = name))+
 
 
 
-
+# 過程誤差の設定を変更して再開せき
+# alpha, betaの事前分布（過程誤差と観測誤差の割合???）
+input$priors$logalpha = c(log(1), 1, 1) # 観測誤差と過程誤差は1:1という仮定
+input$priors$logbeta = c(log(0.1), 1, 1) # 
+input$priors$logsdc = c(log(0.01), 1e-3, 1) # log0, 分散がすごく小さいこと（漁獲量の誤差なし）を仮定．
