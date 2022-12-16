@@ -198,6 +198,7 @@ mohns_rho(res_retro, what = c("FFmsy", "BBmsy"))  #モーンズローの値を�
 #########################################################
 ####　６．資源変動の要因分解プロット
 
+setwd("/Users/Yuki/FRA/Shigen_kensyu_FRA/SSPM/")
 source("function.R")
 res_plot <- plot_barbiomass(res = res0)
 res_plot #要因分解プロットのggplotオブジェクトを描画
