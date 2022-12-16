@@ -252,6 +252,8 @@ ggplot(df_Best_1_2, aes(x=Year, y=Biomass, linetype = name, color = name))+
 input$priors$logalpha = c(log(1), 1, 0) # 観測誤差と過程誤差は1:1という仮定
 input$priors$logbeta = c(log(0.1), 1, 0) # 
 input$priors$logsdc = c(log(0.01), 1e-3, 1) # log0, 分散がすごく小さいこと（漁獲量の誤差なし）を仮定
-
+input$priors$logn = c(log(2), 0.5, 1) # 事前情報として与えないと推定が難しいことがある（Kに対するBmsyの値）
+input$priors$logr = c(log(0.5), 0.5, 1) # 事前情報として与えないと推定が難しいことがある（）
+  
 res1 = fit.spict(input)
 summary(res1)
