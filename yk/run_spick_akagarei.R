@@ -60,10 +60,42 @@ unique(po2$year)
 check = po2 %>% filter(Latitude > 44)
 summary(check)
 
+
+# deta check (map) ----------------------------------------------
+same = po2
+same = same %>% mutate(lon = ((same$Longitude - trunc(same$Longitude)) / 0.6) + trunc(same$Longitude), lat = ((same$Latitude - trunc(same$Latitude)) / 0.6) + trunc(same$Latitude)) %>% na.omit()
+summary(same)
+
+# 北海道も推定してみる
+# same = same %>% filter(lat < 42) #うまいこと北海道のデータは除去できる
+
+
+map = ggplot() + coord_fixed() + xlab("Longitude") + ylab("Latitude")
+world_map = map_data("world")
+region2 = subset(world_map, world_map$region == region)
+local_map = map + geom_polygon(data = region2, aes(x = long, y = lat, group = group), colour = "black", fill = "white") + coord_map(xlim = c(min(same$lon), max(same$lon)), ylim = c(min(same$lat), max(same$lat)))
+th = theme(#panel.grid.major = element_blank(),
+  #panel.grid.minor = element_blank(),
+  axis.text.x = element_text(size = rel(0.5), angle = 90),
+  axis.text.y = element_text(size = rel(0.5)),
+  axis.title.x = element_text(size = rel(0.5)),
+  axis.title.y = element_text(size = rel(0.5)),
+  legend.title = element_text(size = 13))
+p = geom_point(data = same %>% filter(kg > 0), aes(x = lon, y = lat, colour = kg), shape = 16, size = 1)
+# p = geom_point(data = same %>% filter(kg > 10000), aes(x = lon, y = lat, colour = kg), shape = 16, size = 1)
+c = scale_colour_gradientn(colours = c("black", "blue", "cyan", "green", "yellow", "orange", "red", "darkred"))
+labs = labs(x = "Longitude", y = "Latitude", colour = "kg")
+f = facet_wrap(~ year, ncol = 8)
+
+fig = local_map+theme_bw()+th+p+c+labs+scale_x_continuous(breaks=seq(129,152,by=0.5))+scale_y_continuous(breaks=seq(34,47,by=0.5))
+
+
+
 # data area -----------------------------------------------------
 summary(po2)
 
-index_ak = po2 %>% na.omit() %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue))
+index_ck = same %>% filter(lat < 42) %>% na.omit() %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue))
 # index_ak[is.na(index_ak)] = 0
 
-catch_ak = po2 %>% group_by(year) %>% summarize(catch = sum(kg))
+catch_ck = same %>% filter(lat < 42) %>% group_by(year) %>% summarize(catch = sum(kg))
+
