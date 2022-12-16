@@ -94,10 +94,10 @@ fig = local_map+theme_bw()+th+p+c+labs+scale_x_continuous(breaks=seq(129,152,by=
 # data area -----------------------------------------------------
 summary(po2)
 
-index_ak = same %>% filter(lat < 42) %>% na.omit() %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue))
+index_ak = same %>% filter(lat < 42) %>% na.omit() %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue)) %>% filter(year != 1972)
 # index_ak[is.na(index_ak)] = 0
 
-catch_ak = same %>% filter(lat < 42) %>% group_by(year) %>% summarize(catch = sum(kg))
+catch_ak = same %>% filter(lat < 42) %>% group_by(year) %>% summarize(catch = sum(kg)) %>% filter(year != 1972)
 
 
 
