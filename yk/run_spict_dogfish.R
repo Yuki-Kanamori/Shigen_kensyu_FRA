@@ -275,8 +275,10 @@ plotspict.priors(res_po)
 
 ### ４．残差診断（バイアス、自己相関、正規性の診断） ==========================
 
-res_resi <- calc.osa.resid(res0)
-plotspict.diagnostic(res_resi)
+res_resi_js <- calc.osa.resid(res_js)
+plotspict.diagnostic(res_resi_js)
+res_resi_po <- calc.osa.resid(res_po)
+plotspict.diagnostic(res_resi_po)
 
 ##------------------------------------------- 
 ##　推定が上手くいっているか確認事項・その３
