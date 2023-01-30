@@ -146,10 +146,11 @@ require(spict)
 
 index_js = same %>% filter(lon < 141) %>% na.omit() %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue))
 index_po = same %>% filter(lon >= 141) %>% na.omit() %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue))
+index_same = same %>% mutate(cpue = kg/Effort_tow) %>% group_by(year) %>% summarize(cpue = mean(cpue))
 
 catch_js = js2 %>% group_by(year) %>% summarize(catch = sum(kg))
 catch_po = po2 %>%  group_by(year) %>% summarize(catch = sum(kg))
-
+catch_same = same  %>%  group_by(year) %>% summarize(catch = sum(kg))
 
 
 # データリストの作成 -----------------------------------------------------
@@ -161,11 +162,16 @@ data_po <- list(timeC = catch_po$year,
                 obsC  = catch_po$catch,
                 timeI = index_po$year,
                 obsI  = index_po$cpue)
+data_same <- list(timeC = catch_same$year,
+                obsC  = catch_same$catch,
+                timeI = index_same$year,
+                obsI  = index_same$cpue)
 
 
 ### データのプロット
 plotspict.ci(data_js)
 plotspict.ci(data_po)
+plotspict.ci(data_same)
 
 ### 解析のための諸設定を自動生成
 input_js <- check.inp(data_js)
@@ -176,6 +182,10 @@ input_po <- check.inp(data_po)
 names(input_po)
 input_po$dteuler <- 1
 
+input_same <- check.inp(data_same)
+names(input_same)
+input_same$dteuler <- 1
+
 
 ## 事前分布の確認 ----
 names(input_js$priors)
@@ -184,21 +194,26 @@ names(input_po$priors)
 # ヘルプでcheck.inpを調べるとinputの中身を教えてくれる
 input_js$priors$logn # 形状パラメータ（正規分布を仮定．平均，標準偏差，事前分布として用いるかどうか(1なら罰則あり，0なら罰則なしで推定))
 input_po$priors$logn
+input_same$priors$logn
 
 input_js$priors$logr # 内的自然増加率
 input_js$priors$logK # 環境収容力
 input_po$priors$logr # 内的自然増加率
 input_po$priors$logK # 環境収容力
-
+input_same$priors$logr # 内的自然増加率
+input_same$priors$logK # 環境収容力
 
 input_js$priors$logq # 採集効率
 input_po$priors$logq # 採集効率
+input_same$priors$logq # 採集効率
 # input$priors$logq = c(log(2), 0.5, 1)
 
 input_js$priors$logsdb # biomass?
 input_js$priors$logsdi # cpueの観測誤差
 input_po$priors$logsdb # biomass?
 input_po$priors$logsdi # cpueの観測誤差
+input_same$priors$logsdb # biomass?
+input_same$priors$logsdi # cpueの観測誤差
 
 ### 最初の設定は無情報事前分布である
 ### 
@@ -207,17 +222,20 @@ input_po$priors$logsdi # cpueの観測誤差
 ## とりあえずspictで推定 ==================================================
 res_js <- fit.spict(input_js)
 res_po <- fit.spict(input_po)
+res_same <- fit.spict(input_same)
 
 ### 1. 解析結果の確認 =====================================================
 
 # 結果を要約する
 summary(res_js)
 summary(res_po)
+summary(res_same)
 
 # 推定された初期資源量の割合がデフォルトでは出ないので，出す
 get.par("logbkfrac", res_js, exp = TRUE) #オプションexp=TRUEによって、log推定値を非対数に戻す
 # estの値が，環境収容力のどの位置から採っていたのか?????
 get.par("logbkfrac", res_po, exp = TRUE) 
+get.par("logbkfrac", res_same, exp = TRUE) 
 
 #入力データの初期値を確認する：入力データが正しく設定されているかを事後のチェックをしておきましょう
 res_js$inp$ini  # res$inp (spict解析に用いた入力データのオブジェクト)
@@ -229,16 +247,19 @@ res_po$inp$ini
 ## その１−１: 収束しているかどうかを判定
 res_js$opt$convergence  #これが0だったら，収束しているのでOK; もし1だったら、収束していないので結果は信頼できない
 res_po$opt$convergence 
+res_same$opt$convergence 
 ##
 ##
 ## その１−２: 推定パラメータの分散が有限かどうかを判定
 all(is.finite(res_js$sd))  # TRUEだったらパラメータの分散が全て有限であるということでOK
 all(is.finite(res_po$sd))
+all(is.finite(res_same$sd))
 ##
 ##
 ## その１−３: B/BmsyやF/Fmsyの信用区間が一桁以上に広がっていないかどうかを確認
 calc.om(res_js) #戻り値のmagnitudeが1 以下ならばOK -> もしダメなら，n, K, rなど，生物情報に関するようなパラメータを事前情報で与えてあげると良い
 calc.om(res_po)
+calc.om(res_same)
 
 ##
 ##
@@ -259,6 +280,7 @@ fit_po$check.ini$resmat
 ### ２．結果のプロット =====================================================
 plot(res_js) #全体的な結果のプロット
 plot(res_po)
+plot(res_same)
 ##-------------------------------------------
 ## 推定が上手くいっているかの確認事項・その２
 ## 余剰生産曲線の形が現実的であるかどうか
